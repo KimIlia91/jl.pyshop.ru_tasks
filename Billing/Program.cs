@@ -21,7 +21,10 @@ namespace Billing
                     //На момент темтирования выключен сертификат TLS 
                     o.ClientCertificateMode = ClientCertificateMode.NoCertificate;
                 });
-                options.ListenLocalhost(5001, o => o.Protocols = HttpProtocols.Http2);
+                options.ListenLocalhost(5002, o => 
+                {
+                    o.Protocols = HttpProtocols.Http2;
+                });
             });
             var app = builder.Build();
 
