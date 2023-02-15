@@ -3,6 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Billing.Data
 {
+    /// <summary>
+    /// Класс для контекста БД. 
+    /// База создается в памяти приложения и инициализируется тремя тестовыми пользователями при каждом запуске приложения
+    /// Хранение в памяте приложения пока программа работает. В дальнейшем можно перенасторить на настояющие БД.
+    /// </summary>
     public class ApplicationDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }

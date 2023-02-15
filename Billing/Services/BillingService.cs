@@ -5,6 +5,9 @@ using Grpc.Core;
 
 namespace Billing.Services
 {
+    /// <summary>
+    /// Сервис Биллинга монет
+    /// </summary>
     public class BillingService : Billing.BillingBase
     {
         private readonly ApplicationDbContext _db;
@@ -18,6 +21,13 @@ namespace Billing.Services
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// возвращает поток списка пользователей с их счётом
+        /// </summary>
+        /// <param name="request">отправляем пустой запрос None()</param>
+        /// <param name="responseStream"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public override async Task ListUsers(
             None request,
             IServerStreamWriter<UserProfile> responseStream,
@@ -31,6 +41,13 @@ namespace Billing.Services
             }
         }
 
+        /// <summary>
+        /// Эимиссия монет монеты распределяются между всеми согласно рейтингу пользователей
+        /// каждый получает хотябы одну монету
+        /// </summary>
+        /// <param name="request">надо передать количество монет для эмиссии</param>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public override Task<Response> CoinsEmission(EmissionAmount request, ServerCallContext context)
         {
             var usersList = _db.Users.ToList();
@@ -46,6 +63,14 @@ namespace Billing.Services
             });
         }
 
+        /// <summary>
+        /// Перемещение монет от одного пользователя к другому
+        /// Возвращает ответ: Статус и комментарий
+        /// Перемещение сохраняютнся в истории монеты
+        /// </summary>
+        /// <param name="request">Запрос в ктором указанно от кого и кому, а также количество монет</param>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public override Task<Response> MoveCoins(MoveCoinsTransaction request, ServerCallContext context)
         {
             Response response = new Response();
@@ -87,6 +112,13 @@ namespace Billing.Services
             return Task.FromResult(response);
         }
 
+        /// <summary>
+        /// Монета с самой длинной историей начиная с эмиссии
+        /// </summary>
+        /// <param name="request">получает пустой запрос</param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        /// <exception cref="RpcException"></exception>
         public override Task<Coin> LongestHistoryCoin(None request, ServerCallContext context)
         {
             var userCoin = _db.UserCoins.OrderByDescending(c => c.History.Length).FirstOrDefault();
@@ -98,6 +130,13 @@ namespace Billing.Services
             return Task.FromResult(coin);
         }
 
+        /// <summary>
+        /// Функция которая возвращает кортеж Список выпущенных монет и 
+        /// список пользователей которые получили новые монеты
+        /// </summary>
+        /// <param name="coinsToDistribute">количество монет для эимсcии</param>
+        /// <param name="usersList">Список всех пользователей для получения монет</param>
+        /// <returns></returns>
         private static (List<UserCoin>, List<User>) GetCoinsEmissionAndUsersToUpdate(
             long coinsToDistribute,
             List<User> usersList)
