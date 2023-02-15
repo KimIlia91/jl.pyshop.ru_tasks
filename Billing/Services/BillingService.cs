@@ -35,7 +35,7 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
-            var tulup = GetCoinsAndUsersToUpdate(coinsToDistribute, usersList);
+            var tulup = GetCoinsEmissionAndUsersToUpdate(coinsToDistribute, usersList);
             _db.UserCoins.AddRange(tulup.Item1);
             _db.Users.UpdateRange(tulup.Item2);
             _db.SaveChanges();
@@ -98,7 +98,7 @@ namespace Billing.Services
             return Task.FromResult(coin);
         }
 
-        private static (List<UserCoin>, List<User>) GetCoinsAndUsersToUpdate(
+        private static (List<UserCoin>, List<User>) GetCoinsEmissionAndUsersToUpdate(
             long coinsToDistribute,
             List<User> usersList)
         {
