@@ -49,7 +49,7 @@ namespace Billing.Services
         /// </summary>
         /// <param name="request">надо передать количество монет для эмиссии</param>
         /// <param name="context"></param>
-        /// <returns></returns>
+        /// <returns>Возвращает ответ: Статус и комментарий</returns>
         public override Task<Response> CoinsEmission(EmissionAmount request, ServerCallContext context)
         {
             var usersList = _db.Users.ToList();
@@ -67,12 +67,11 @@ namespace Billing.Services
 
         /// <summary>
         /// Перемещение монет от одного пользователя к другому
-        /// Возвращает ответ: Статус и комментарий
         /// Перемещение сохраняютнся в истории монеты
         /// </summary>
         /// <param name="request">Запрос в ктором указанно от кого и кому, а также количество монет</param>
         /// <param name="context"></param>
-        /// <returns></returns>
+        /// <returns>Возвращает ответ: Статус и комментарий</returns>
         public override Task<Response> MoveCoins(MoveCoinsTransaction request, ServerCallContext context)
         {
             Response response = new Response();
@@ -120,8 +119,9 @@ namespace Billing.Services
         /// </summary>
         /// <param name="request">получает пустой запрос</param>
         /// <param name="context"></param>
-        /// <returns></returns>
-        /// <exception cref="RpcException"></exception>
+        /// <returns>
+        /// Возвращаем монету с самой длиной историей, если есть с такой же длиной, то возвращаем первую в списке монету
+        /// </returns>
         public override Task<Coin> LongestHistoryCoin(None request, ServerCallContext context)
         {
             var userCoinsList = _db.UserCoins.ToList();
@@ -138,8 +138,8 @@ namespace Billing.Services
         /// <summary>
         /// Метод для получения самой длиной истории среди монет.
         /// </summary>
-        /// <param name="userCoinsList"></param>
-        /// <returns></returns>
+        /// <param name="userCoinsList">Получаем список монет пользователя</param>
+        /// <returns>возвращаем самую длиную инсторию монеты</returns>
         private static string GetLongestHistoryOfCoin(List<UserCoin> userCoinsList)
         {
             var longestHistoryArray = userCoinsList
@@ -156,7 +156,7 @@ namespace Billing.Services
         /// </summary>
         /// <param name="coinsToDistribute">количество монет для эимсcии</param>
         /// <param name="usersList">Список всех пользователей для получения монет</param>
-        /// <returns></returns>
+        /// <returns>Возвращаем кортеж список эмиссии Монет пользователей и список самих пользователей с обновленным количеством монет(Amount)</returns>
         private static (List<UserCoin>, List<User>) GetCoinsEmissionAndUsersCoins(
             long coinsToDistribute,
             List<User> usersList)
