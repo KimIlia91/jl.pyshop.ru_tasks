@@ -54,14 +54,14 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
-            var tulupCoinsEmissionUserCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
-            _db.UserCoins.AddRange(tulupCoinsEmissionUserCoins.Item1);
-            _db.Users.UpdateRange(tulupCoinsEmissionUserCoins.Item2);
+            var tupleCoinsEmissionUserCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
+            _db.UserCoins.AddRange(tupleCoinsEmissionUserCoins.Item1);
+            _db.Users.UpdateRange(tupleCoinsEmissionUserCoins.Item2);
             _db.SaveChanges();
             return Task.FromResult(new Response
             {
                 Status = Response.Types.Status.Ok,
-                Comment = $"Emission {tulupCoinsEmissionUserCoins.Item1.Count} coins."
+                Comment = $"Emission {tupleCoinsEmissionUserCoins.Item1.Count} coins."
             });
         }
 
