@@ -98,7 +98,7 @@ namespace Billing.Services
             foreach (var movedCoin in coinsToMove)
             {
                 movedCoin!.UserId = dstUser.Id;
-                movedCoin.History += $" + {dstUser.Name}";
+                movedCoin.History += $"-{dstUser.Name}";
                 coinsMoveList.Add(movedCoin);
                 srcUser.Amount--;
                 dstUser.Amount++;
@@ -114,7 +114,7 @@ namespace Billing.Services
 
         /// <summary>
         /// Монета с самой длинной историей начиная с эмиссии.
-        /// Если длина истории одинаковая у нескоьких монет, то вернет первую в списке из этих монет
+        /// Если длина истории одинаковая у нескольких монет, то вернет первую в списке из этих монет
         /// </summary>
         /// <param name="request">получает пустой запрос</param>
         /// <param name="context"></param>
@@ -122,13 +122,27 @@ namespace Billing.Services
         /// <exception cref="RpcException"></exception>
         public override Task<Coin> LongestHistoryCoin(None request, ServerCallContext context)
         {
-            var userCoin = _db.UserCoins.OrderByDescending(c => c.History.Length).FirstOrDefault();
-            if (userCoin == null)
+            var userCoinsList = _db.UserCoins.ToList();
+            if (userCoinsList == null)
             {
-                throw new RpcException(new Status(StatusCode.NotFound, "No coins found"));
+                return Task.FromResult(new Coin { History = "No coins found" });
             }
+            string longestHistoryStr = GetLongestHistoryOfCoins(userCoinsList);
+            var userCoin = userCoinsList.FirstOrDefault(c => c.History == longestHistoryStr);
             var coin = _mapper.Map<Coin>(userCoin);
             return Task.FromResult(coin);
+        }
+
+        private static string GetLongestHistoryOfCoins(List<UserCoin> userCoinsList)
+        {
+            var longestHistoryArray = userCoinsList
+                            .Select(i => i.History)
+                            .ToArray()
+                            .Select(i => i.Split("-"))
+                            .OrderByDescending(c => c.Length)
+                            .First();
+            var longestHistoryStr = string.Join("-", longestHistoryArray);
+            return longestHistoryStr;
         }
 
         /// <summary>
