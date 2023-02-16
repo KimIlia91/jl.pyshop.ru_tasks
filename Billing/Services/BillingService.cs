@@ -54,14 +54,14 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
-            var tulup = GetEmissionCoinsAndUsersToUpdate(coinsToDistribute, usersList);
-            _db.UserCoins.AddRange(tulup.Item1);
-            _db.Users.UpdateRange(tulup.Item2);
+            var tulupCoinsEmissionUsersCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
+            _db.UserCoins.AddRange(tulupCoinsEmissionUsersCoins.Item1);
+            _db.Users.UpdateRange(tulupCoinsEmissionUsersCoins.Item2);
             _db.SaveChanges();
             return Task.FromResult(new Response
             {
                 Status = Response.Types.Status.Ok,
-                Comment = $"Emission {tulup.Item1.Count} coins."
+                Comment = $"Emission {tulupCoinsEmissionUsersCoins.Item1.Count} coins."
             });
         }
 
@@ -157,7 +157,7 @@ namespace Billing.Services
         /// <param name="coinsToDistribute">количество монет для эимсcии</param>
         /// <param name="usersList">Список всех пользователей для получения монет</param>
         /// <returns></returns>
-        private static (List<UserCoin>, List<User>) GetEmissionCoinsAndUsersToUpdate(
+        private static (List<UserCoin>, List<User>) GetCoinsEmissionAndUsersCoins(
             long coinsToDistribute,
             List<User> usersList)
         {
