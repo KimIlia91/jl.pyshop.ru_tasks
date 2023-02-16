@@ -170,7 +170,7 @@ namespace Billing.Services
                 if (coinsForUser < 1) coinsForUser = 1;
                 for (var i = 0.5; i <= coinsForUser; i++)
                 {
-                    if (coinsToDistribute <= coinsEmissionList.Count && coinsForUser == 0) break;
+                    if (coinsToDistribute <= coinsEmissionList.Count && coinsForUser != 1) break;
                     var coin = new UserCoin { History = $"Issued to {user.Name}", UserId = user.Id };
                     user.Amount++;
                     coinsEmissionList.Add(coin);
