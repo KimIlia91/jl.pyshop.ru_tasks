@@ -16,7 +16,6 @@ namespace Billing.Data
 
         public ApplicationDbContext()
         {
-            //Создает БД если её нету
             Database.EnsureCreated();
         }
         // Инициализирует базу данных тестовыми пользователями
@@ -28,7 +27,7 @@ namespace Billing.Data
                     new User { Id = 3, Name = "oleg", Rating = 800 }
             );
         }
-        //UseInMemoryDatabase это значит что база будет создаваться в памяти приложения
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseInMemoryDatabase(databaseName: "BillingDb");
     }

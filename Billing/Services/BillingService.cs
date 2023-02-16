@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Billing;
 using Billing.Data;
 using Billing.Models;
+using Billing.Services;
 using Grpc.Core;
 
 namespace Billing.Services
@@ -10,6 +12,153 @@ namespace Billing.Services
     /// </summary>
     public class BillingService : Billing.BillingBase
     {
+        /*
+        #region
+        private static UserTest[] users = new UserTest[]
+        {
+                new UserTest(new UserProfile(){Name="boris",Amount=0 },5000),
+                new UserTest(new UserProfile(){Name="maria",Amount=0 },1000),
+                new UserTest(new UserProfile(){Name="oleg",Amount=0 },800),
+        };
+
+        public BillingService()
+        {
+        }
+
+        private static long currentCoinId = 0;
+
+        public override async Task ListUsers(
+            None request,
+            IServerStreamWriter<UserProfile> responseStream,
+            ServerCallContext context
+            )
+        {
+            var profiles = users.Select(l => l.profile).ToArray();
+            foreach (var profile in profiles)
+            {
+                await responseStream.WriteAsync(profile);
+            }
+        }
+
+        public override Task<Response> CoinsEmission(EmissionAmount request, ServerCallContext context)
+        {
+            if (request.Amount < users.Length)
+            {
+                return Task.FromResult(new Response
+                {
+                    Status = Response.Types.Status.Failed,
+                    Comment = "Emission has not been made. Coins amount is less than users",
+                });
+            }
+
+            distributeСoins(request.Amount);
+            return Task.FromResult(new Response
+            {
+                Status = Response.Types.Status.Ok,
+                Comment = "Emission completed successfully",
+            });
+        }
+
+        public override Task<Response> MoveCoins(MoveCoinsTransaction request, ServerCallContext context)
+        {
+            var srcUser = users.SingleOrDefault(l => l.profile.Name == request.SrcUser);
+            var dstUser = users.SingleOrDefault(l => l.profile.Name == request.DstUser);
+
+            if (srcUser == null || dstUser == null)
+            {
+                return Task.FromResult(new Response
+                {
+                    Status = Response.Types.Status.Failed,
+                    Comment = "Sender or recipient not found",
+                });
+            }
+            if (srcUser.coins.Count < request.Amount)
+            {
+                return Task.FromResult(new Response
+                {
+                    Status = Response.Types.Status.Failed,
+                    Comment = "Not enough money in the account",
+                });
+            }
+
+            srcUser.profile.Amount -= request.Amount;
+            dstUser.profile.Amount += request.Amount;
+
+            var transferAmount = (int)request.Amount;
+
+            var transferableCoins = new List<Coin>(srcUser.coins.TakeLast(transferAmount)).Select(l => new
+            {
+                id = l.Id,
+                history = l.History + $"{dstUser.profile.Name} "
+            });
+
+            srcUser.coins.RemoveRange(srcUser.coins.Count - transferAmount - 1, transferAmount);
+            foreach (var transferableCoin in transferableCoins)
+            {
+                dstUser.coins.Add(new() { Id = transferableCoin.id, History = transferableCoin.history });
+            }
+
+
+            return Task.FromResult(new Response
+            {
+                Status = Response.Types.Status.Ok,
+                Comment = $" Coins from account {srcUser.profile.Name} to account {dstUser.profile.Name} were transferred successfully ",
+            });
+        }
+
+        public override Task<Coin> LongestHistoryCoin(None request, ServerCallContext context) =>
+            Task.FromResult(users.SelectMany(u => u.coins).MaxBy(coin => coin.History.Split(" ").Length));
+
+
+
+        private void giveOneCoin()
+        {
+            foreach (var user in users)
+            {
+                user.profile.Amount++;
+                user.coins.Add(new() { Id = currentCoinId++, History = $"{user.profile.Name} " });
+            }
+        }
+
+        private void distributeRemainingCoins(long remainingCoins, double ratingCoeff)
+        {
+            users.OrderByDescending(l => l.rating / ratingCoeff - Math.Truncate(l.rating / ratingCoeff));
+            for (int i = 0; i < remainingCoins; i++)
+            {
+                //монет осталось точно меньше, чем пользователей, так что дораспределение более чем по 1 монете не учитываем)
+                users[i].profile.Amount++;
+                users[i].coins.Add(new() { Id = currentCoinId++, History = $"{users[i].profile.Name} " });
+            }
+        }
+
+        private void distributeСoins(long totalAmount)
+        {
+            giveOneCoin();
+
+            long remainingCoins = totalAmount - users.Length;
+            long totalRating = users.Select(l => l.rating).Sum();
+            double ratingCoeff = (double)totalRating / remainingCoins;
+
+            foreach (var user in users)
+            {
+                double ratingWeight = user.rating / ratingCoeff;
+                if (ratingWeight >= 1)
+                {
+                    for (int i = 0; i < Math.Floor(ratingWeight); i++)
+                    {
+                        user.profile.Amount++;
+                        user.coins.Add(new() { Id = currentCoinId++, History = $"{user.profile.Name} " });
+                        remainingCoins--;
+                    }
+                }
+            }
+
+            distributeRemainingCoins(remainingCoins, ratingCoeff);
+        }
+        #endregion
+        */
+        #region
+     
         private readonly ApplicationDbContext _db;
         private readonly IMapper _mapper;
 
@@ -123,11 +272,11 @@ namespace Billing.Services
         public override Task<Coin> LongestHistoryCoin(None request, ServerCallContext context)
         {
             var userCoinsList = _db.UserCoins.ToList();
-            if (userCoinsList == null)
+            var longestHistoryStr = GetLongestHistoryOfCoin(userCoinsList);
+            if (longestHistoryStr == null)
             {
                 return Task.FromResult(new Coin { History = "No coins found" });
             }
-            var longestHistoryStr = GetLongestHistoryOfCoins(userCoinsList);
             var userCoin = userCoinsList.FirstOrDefault(c => c.History == longestHistoryStr);
             var coin = _mapper.Map<Coin>(userCoin);
             return Task.FromResult(coin);
@@ -138,21 +287,19 @@ namespace Billing.Services
         /// </summary>
         /// <param name="userCoinsList"></param>
         /// <returns></returns>
-        private static string GetLongestHistoryOfCoins(List<UserCoin> userCoinsList)
+        private static string GetLongestHistoryOfCoin(List<UserCoin> userCoinsList)
         {
             var longestHistoryArray = userCoinsList
                             .Select(i => i.History)
-                            .ToArray()
-                            .Select(i => i.Split("-"))
-                            .OrderByDescending(c => c.Length)
-                            .First();
-            var longestHistoryStr = string.Join("-", longestHistoryArray);
-            return longestHistoryStr;
+                            .MaxBy(i => i.Split("-").Length);   
+            return longestHistoryArray;
         }
 
         /// <summary>
         /// Функция которая возвращает кортеж Список выпущенных монет и 
-        /// список пользователей которые получили новые монеты. Каждый пользователь должен получить не менее 1-й монеты
+        /// список пользователей которые получили новые монеты. 
+        /// Распеделяет монеты по рейтингу, если монет на распределения не осталось согласно рейтингу,
+        /// то досоздаёт по одной монете для зачисления
         /// </summary>
         /// <param name="coinsToDistribute">количество монет для эимсcии</param>
         /// <param name="usersList">Список всех пользователей для получения монет</param>
@@ -161,7 +308,9 @@ namespace Billing.Services
             long coinsToDistribute,
             List<User> usersList)
         {
+            var coinsLeft = coinsToDistribute - usersList.Count;
             var totalRating = usersList.Sum(u => u.Rating);
+            var coefficient = (double)totalRating / coinsLeft;
             var coinsEmissionList = new List<UserCoin>();
             var usersToUpdateList = new List<User>();
             foreach (var user in usersList)
@@ -170,9 +319,7 @@ namespace Billing.Services
                 if (coinsForUser < 1) coinsForUser = 1;
                 for (var i = 0.5; i <= coinsForUser; i++)
                 {
-                    //CoinsToDistribute должен быть не меньше 5,
-                    //что гарантирует что пользователь получит хотябы одну монету учитывая рейтинг
-                    if (coinsToDistribute <= coinsEmissionList.Count && coinsToDistribute > 5) break;
+                    if (coinsToDistribute <= coinsEmissionList.Count && coinsForUser == 0) break;
                     var coin = new UserCoin { History = $"Issued to {user.Name}", UserId = user.Id };
                     user.Amount++;
                     coinsEmissionList.Add(coin);
@@ -180,6 +327,22 @@ namespace Billing.Services
                 }
             }
             return (coinsEmissionList, usersToUpdateList);
+        }
+
+        #endregion
+    }
+
+    public class UserTest
+    {
+        public readonly UserProfile profile;
+        public readonly int rating;
+        public readonly List<Coin> coins;
+
+        public UserTest(UserProfile profile, int rating)
+        {
+            this.profile = profile;
+            this.rating = rating;
+            this.coins = new List<Coin>();
         }
     }
 }
