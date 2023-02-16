@@ -54,14 +54,14 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
-            var tulupCoinsEmissionUsersCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
-            _db.UserCoins.AddRange(tulupCoinsEmissionUsersCoins.Item1);
-            _db.Users.UpdateRange(tulupCoinsEmissionUsersCoins.Item2);
+            var tulupCoinsEmissionUserCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
+            _db.UserCoins.AddRange(tulupCoinsEmissionUserCoins.Item1);
+            _db.Users.UpdateRange(tulupCoinsEmissionUserCoins.Item2);
             _db.SaveChanges();
             return Task.FromResult(new Response
             {
                 Status = Response.Types.Status.Ok,
-                Comment = $"Emission {tulupCoinsEmissionUsersCoins.Item1.Count} coins."
+                Comment = $"Emission {tulupCoinsEmissionUserCoins.Item1.Count} coins."
             });
         }
 
@@ -163,7 +163,7 @@ namespace Billing.Services
         {
             var totalRating = usersList.Sum(u => u.Rating);
             var coinsEmissionList = new List<UserCoin>();
-            var usersToUpdateList = new List<User>();
+            var userCoinsList = new List<User>();
             foreach (var user in usersList)
             {
                 var coinsForUser = Math.Round((double)coinsToDistribute * user.Rating / totalRating, 1);
@@ -174,10 +174,10 @@ namespace Billing.Services
                     var coin = new UserCoin { History = $"Issued to {user.Name}", UserId = user.Id };
                     user.Amount++;
                     coinsEmissionList.Add(coin);
-                    usersToUpdateList.Add(user);
+                    userCoinsList.Add(user);
                 }
             }
-            return (coinsEmissionList, usersToUpdateList);
+            return (coinsEmissionList, userCoinsList);
         }
     }
 }
