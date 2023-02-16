@@ -52,7 +52,7 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
-            var tulup = GetCoinsEmissionAndUsersToUpdate(coinsToDistribute, usersList);
+            var tulup = GetEmissionCoinsAndUsersToUpdate(coinsToDistribute, usersList);
             _db.UserCoins.AddRange(tulup.Item1);
             _db.Users.UpdateRange(tulup.Item2);
             _db.SaveChanges();
@@ -113,7 +113,8 @@ namespace Billing.Services
         }
 
         /// <summary>
-        /// Монета с самой длинной историей начиная с эмиссии
+        /// Монета с самой длинной историей начиная с эмиссии.
+        /// Если длина истории одинаковая у нескоьких монет, то вернет первую в списке из этих монет
         /// </summary>
         /// <param name="request">получает пустой запрос</param>
         /// <param name="context"></param>
@@ -132,12 +133,12 @@ namespace Billing.Services
 
         /// <summary>
         /// Функция которая возвращает кортеж Список выпущенных монет и 
-        /// список пользователей которые получили новые монеты
+        /// список пользователей которые получили новые монеты. Каждый пользователь должен получить не менее 1-й монеты
         /// </summary>
         /// <param name="coinsToDistribute">количество монет для эимсcии</param>
         /// <param name="usersList">Список всех пользователей для получения монет</param>
         /// <returns></returns>
-        private static (List<UserCoin>, List<User>) GetCoinsEmissionAndUsersToUpdate(
+        private static (List<UserCoin>, List<User>) GetEmissionCoinsAndUsersToUpdate(
             long coinsToDistribute,
             List<User> usersList)
         {
@@ -150,7 +151,9 @@ namespace Billing.Services
                 if (coinsForUser < 1) coinsForUser = 1;
                 for (var i = 0.5; i <= coinsForUser; i++)
                 {
-                    if (coinsToDistribute <= coinsEmissionList.Count) break;
+                    //CoinsToDistribute должен быть не меньше 5,
+                    //что гарантирует что пользователь получит хотябы одну монету учитывая рейтинг
+                    if (coinsToDistribute <= coinsEmissionList.Count && coinsToDistribute > 5) break;
                     var coin = new UserCoin { History = $"Issued to {user.Name}", UserId = user.Id };
                     user.Amount++;
                     coinsEmissionList.Add(coin);
