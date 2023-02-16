@@ -127,12 +127,17 @@ namespace Billing.Services
             {
                 return Task.FromResult(new Coin { History = "No coins found" });
             }
-            string longestHistoryStr = GetLongestHistoryOfCoins(userCoinsList);
+            var longestHistoryStr = GetLongestHistoryOfCoins(userCoinsList);
             var userCoin = userCoinsList.FirstOrDefault(c => c.History == longestHistoryStr);
             var coin = _mapper.Map<Coin>(userCoin);
             return Task.FromResult(coin);
         }
 
+        /// <summary>
+        /// Метод для получения самой длиной истории среди монет.
+        /// </summary>
+        /// <param name="userCoinsList"></param>
+        /// <returns></returns>
         private static string GetLongestHistoryOfCoins(List<UserCoin> userCoinsList)
         {
             var longestHistoryArray = userCoinsList
