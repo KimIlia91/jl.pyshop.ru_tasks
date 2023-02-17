@@ -54,6 +54,12 @@ namespace Billing.Services
         {
             var usersList = _db.Users.ToList();
             var coinsToDistribute = request.Amount;
+            if (usersList.Count < 1 || coinsToDistribute < 1) 
+                return Task.FromResult(new Response
+                {
+                    Status = Response.Types.Status.Failed,
+                    Comment = $"There are no users or coins to emission."
+                });
             var tupleCoinsEmissionUserCoins = GetCoinsEmissionAndUsersCoins(coinsToDistribute, usersList);
             _db.UserCoins.AddRange(tupleCoinsEmissionUserCoins.Item1);
             _db.Users.UpdateRange(tupleCoinsEmissionUserCoins.Item2);
